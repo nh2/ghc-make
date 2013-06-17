@@ -36,10 +36,10 @@ args = do
     let hasArg x = x `elem` argsGHC
     let getArg b x = findArg b x argsGHC
 
-    let modeGHC = any hasArg $ "--version" : "--numeric-version" : flagsConflictingWithM
+    let modeGHC = any (`elem` flagsConflictingWithM) argsGHC
     let prefix = fromMaybe "" (getArg True "-odir" `mplus` getArg True "-hidir") </> ".ghc-make"
     let outputFile file = fromMaybe "" (getArg True "-outputdir") </> fromMaybe (takeBaseName file) (getArg False "-o") <.> exe
-    
+
     let (hiFile, hiModule) = extFileModule getArg "hi"
     let ( oFile,  oModule) = extFileModule getArg "o"
     return Args{..}
@@ -77,15 +77,39 @@ findArg implicit flag xs
 
 
 -- | All flags conflicting with `ghc -M`.
--- Obtained from ghc/Main.hs, `data PostLoadMode`, must be kept up to date:
+-- Obtained from the man page (listed in the same order as they appear there)
+-- and ghc/Main.hs, `data PostLoadMode`:
 -- All modes that are not `DoMkDependHS` (`-M`) are conflicting
 -- (apart from `--make`).
 flagsConflictingWithM :: [String]
-flagsConflictingWithM = [ "--show-iface", "-E", "-C", "-S", "-c"
-                        , "--interactive", "-e", "--abi-hash"
-                        , "--info"
-                        , "--help", "-?", "-help"
-                        ]
+flagsConflictingWithM =
+    -- "Help and verbosity options"
+    [ "-?"
+    , "--help"
+    , "-V"
+    , "--supported-extensions"
+    , "--supported-languages"
+    , "--info"
+    , "--version"
+    , "--numeric-version"
+    , "--print-libdir"
+
+    -- "Which phases to run"
+    , "-E"
+    , "-C"
+    , "-S"
+    , "-c"
+
+    -- "Alternative modes of operation"
+    , "--interactive"
+    , "-e"
+
+    -- "Interface file options"
+    , "--show-iface"
+
+    -- Undocumented?
+    , "--abi-hash"
+    ]
 
 
 -- | Split flags into (Shake flags, GHC flags)
